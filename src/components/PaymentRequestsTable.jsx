@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { History, Clock } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -16,15 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Clock, History } from 'lucide-react';
-import { usePayment } from '../contexts/PaymentContext';
+import PropTypes from 'prop-types';
 
-const PaymentRequests = () => {
-  const { getPaymentRequests } = usePayment();
-  const [filter, setFilter] = useState('all');
-
-  const filteredRequests = getPaymentRequests(filter);
-
+const PaymentRequestsTable = ({ sellerPaymentHistory }) => {
   const formatDate = (timestamp) => {
     return new Date(timestamp * 1000).toLocaleString();
   };
@@ -45,19 +32,8 @@ const PaymentRequests = () => {
               >
                 <History className='w-5 h-5 text-indigo-400' />
               </motion.div>
-              Payment Requests
+              Payment History
             </CardTitle>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className='w-40 bg-slate-800 border-slate-700'>
-                <SelectValue placeholder='Filter status' />
-              </SelectTrigger>
-              <SelectContent className='bg-slate-800 border-slate-700'>
-                <SelectItem value='all'>All Requests</SelectItem>
-                <SelectItem value='pending'>Pending</SelectItem>
-                <SelectItem value='completed'>Completed</SelectItem>
-                <SelectItem value='expired'>Expired</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardHeader>
         <CardContent>
@@ -77,49 +53,41 @@ const PaymentRequests = () => {
                     Amount
                   </TableHead>
                   <TableHead className='text-slate-400 font-medium'>
-                    Status
+                    By
                   </TableHead>
                   <TableHead className='text-slate-400 font-medium'>
-                    Created
+                    Timestamp
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRequests.map((request, index) => (
+                {sellerPaymentHistory.map((payment, index) => (
                   <motion.tr
-                    key={request.paymentId}
+                    key={payment.paymentId}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * index }}
                     className='group'
                   >
                     <TableCell className='text-slate-300 font-medium'>
-                      {request.paymentId}
+                      {payment.paymentId}
                     </TableCell>
                     <TableCell className='text-slate-300'>
-                      {request.amount} ETH
+                      {payment.amount} ETH
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          request.status === 'completed'
-                            ? 'bg-green-500/10 text-green-400'
-                            : request.status === 'pending'
-                            ? 'bg-yellow-500/10 text-yellow-400'
-                            : 'bg-red-500/10 text-red-400'
-                        }`}
-                      >
-                        {request.status}
-                      </span>
+                      {`${payment.buyer.slice(0, 6)}...${payment.buyer.slice(
+                        -4
+                      )}`}
                     </TableCell>
                     <TableCell className='text-slate-400'>
-                      {formatDate(request.createdAt)}
+                      {formatDate(payment.timestamp)}
                     </TableCell>
                   </motion.tr>
                 ))}
               </TableBody>
             </Table>
-            {filteredRequests.length === 0 && (
+            {sellerPaymentHistory.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -136,4 +104,15 @@ const PaymentRequests = () => {
   );
 };
 
-export default PaymentRequests;
+PaymentRequestsTable.propTypes = {
+  sellerPaymentHistory: PropTypes.arrayOf(
+    PropTypes.shape({
+      paymentId: PropTypes.string.isRequired,
+      amount: PropTypes.number.isRequired,
+      buyer: PropTypes.string.isRequired,
+      timestamp: PropTypes.number.isRequired,
+    })
+  ).isRequired,
+};
+
+export default PaymentRequestsTable;

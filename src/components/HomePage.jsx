@@ -1,13 +1,10 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Store,
   Users,
   Shield,
   Sparkles,
-  ArrowRight,
   Boxes,
-  Lock,
   Wallet,
   ChevronRight,
   Globe,
@@ -19,9 +16,8 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import PropTypes from 'prop-types';
 
 const MainFeatureCard = ({ title, description, icon: Icon, to }) => (
   <Link to={to} className='block'>
@@ -45,6 +41,13 @@ const MainFeatureCard = ({ title, description, icon: Icon, to }) => (
   </Link>
 );
 
+MainFeatureCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  icon: PropTypes.elementType.isRequired,
+  to: PropTypes.string.isRequired,
+};
+
 const FeatureCard = ({ title, description, icon: Icon }) => (
   <Card className='bg-slate-900/40 border-slate-800/50 hover:border-slate-700/50 transition-all duration-300 h-full'>
     <CardHeader>
@@ -60,6 +63,12 @@ const FeatureCard = ({ title, description, icon: Icon }) => (
     </CardHeader>
   </Card>
 );
+
+FeatureCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  icon: PropTypes.elementType.isRequired,
+};
 
 const Stats = () => (
   <div className='grid grid-cols-2 md:grid-cols-4 gap-6 py-8'>
@@ -114,7 +123,6 @@ const HomePage = () => {
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24'>
-        {/* Hero Section */}
         <div className='text-center mb-20'>
           <h1 className='text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 animate-gradient'>
             NexusPay
@@ -125,10 +133,8 @@ const HomePage = () => {
           </p>
         </div>
 
-        {/* Stats Section */}
         <Stats />
 
-        {/* Main Features Grid */}
         <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-24'>
           <MainFeatureCard
             title='Client Portal'
@@ -150,7 +156,6 @@ const HomePage = () => {
           />
         </div>
 
-        {/* Additional Features Grid */}
         <div>
           <h2 className='text-3xl font-semibold text-slate-50 text-center mb-12'>
             Enterprise-Grade Features

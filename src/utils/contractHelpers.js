@@ -1,4 +1,4 @@
-const CONTRACT_ADDRESS = '0x8ac4ceA9F84d586d8441a1F5b0C3EB98b5b74Ff8';
+const CONTRACT_ADDRESS = '0x8299fa0dc7E276435Ae670A99b40BF35C45f93C8';
 const CONTRACT_ABI = [
   {
     inputs: [],
@@ -256,6 +256,45 @@ const CONTRACT_ABI = [
         internalType: 'uint256[]',
         name: 'timestamps',
         type: 'uint256[]',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'seller',
+        type: 'address',
+      },
+    ],
+    name: 'getSellerPaymentHistory',
+    outputs: [
+      {
+        internalType: 'string[]',
+        name: 'paymentIds',
+        type: 'string[]',
+      },
+      {
+        internalType: 'address[]',
+        name: 'buyers',
+        type: 'address[]',
+      },
+      {
+        internalType: 'uint256[]',
+        name: 'amounts',
+        type: 'uint256[]',
+      },
+      {
+        internalType: 'uint256[]',
+        name: 'timestamps',
+        type: 'uint256[]',
+      },
+      {
+        internalType: 'bool[]',
+        name: 'isPaid',
+        type: 'bool[]',
       },
     ],
     stateMutability: 'view',

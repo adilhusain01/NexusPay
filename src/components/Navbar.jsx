@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, ExternalLink, Menu, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Wallet, ExternalLink, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useWallet } from '../contexts/WalletContext';
@@ -51,7 +51,6 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <div className='hidden md:flex items-center space-x-4'>
             {account ? (
               <div className='flex flex-row items-center space-x-4'>
@@ -81,7 +80,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Navigation */}
           <div className='md:hidden'>
             <Sheet>
               <SheetTrigger asChild>

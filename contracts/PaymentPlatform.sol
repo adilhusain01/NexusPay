@@ -32,6 +32,7 @@ contract PaymentPlatform {
     // State variables
     mapping(address => Seller) public sellers;
     mapping(string => PaymentRequest) public paymentRequests;
+    mapping(address => PaymentRequest[]) private sellerPaymentHistory;
     mapping(address => ClientPayment[]) private clientPaymentHistory;
     uint256 public constant PAYMENT_WINDOW = 180 seconds; // 3 minutes expiry time
     address public owner;
@@ -147,6 +148,9 @@ contract PaymentPlatform {
         Seller storage seller = sellers[request.seller];
         seller.totalTransactions += 1;
         seller.totalAmount += msg.value;
+
+        // Record payment in seller's history
+        sellerPaymentHistory[request.seller].push(request);
         
         // Record payment in client's history
         clientPaymentHistory[msg.sender].push(ClientPayment({
@@ -163,6 +167,38 @@ contract PaymentPlatform {
         
         emit PaymentCompleted(paymentId, msg.sender, request.seller, msg.value);
     }
+
+    function getSellerPaymentHistory(address seller) 
+        external 
+        view 
+        returns (
+            string[] memory paymentIds,
+            address[] memory buyers,
+            uint256[] memory amounts,
+            uint256[] memory timestamps,
+            bool[] memory isPaid
+        ) 
+    {
+        PaymentRequest[] memory history = sellerPaymentHistory[seller];
+        uint256 length = history.length;
+        
+        paymentIds = new string[](length);
+        buyers = new address[](length);
+        amounts = new uint256[](length);
+        timestamps = new uint256[](length);
+        isPaid = new bool[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            paymentIds[i] = history[i].paymentId;
+            buyers[i] = history[i].buyer;
+            amounts[i] = history[i].amount;
+            timestamps[i] = history[i].expiryTime - PAYMENT_WINDOW;
+            isPaid[i] = history[i].isPaid;
+        }
+        
+        return (paymentIds, buyers, amounts, timestamps, isPaid);
+    }
+
 
     // New function to get client's payment history
     function getClientPaymentHistory(address client) 

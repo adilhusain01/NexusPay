@@ -1,28 +1,22 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Wallet, ArrowRight, XCircle } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { usePayment } from '../contexts/PaymentContext';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import PropTypes from 'prop-types';
 
-const CreatePaymentRequest = () => {
-  const { createPaymentRequest, loading } = usePayment();
+const CreatePaymentForm = ({ loading, onSubmit }) => {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
 
-  const handleCreatePayment = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     try {
-      const uniqueId = `pay_${Date.now()}`;
-      await createPaymentRequest(uniqueId, amount);
+      await onSubmit(amount);
       setAmount('');
-      toast.success('Payment request created successfully!');
     } catch (error) {
       setError('Failed to create payment request.');
-      toast.error('Payment request creation failed');
-      console.error('Payment creation error:', error);
+      console.log(error);
     }
   };
 
@@ -45,7 +39,7 @@ const CreatePaymentRequest = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreatePayment} className='space-y-4'>
+          <form onSubmit={handleSubmit} className='space-y-4'>
             <div>
               <label className='block text-sm font-medium text-slate-400 mb-2'>
                 Amount (ETH)
@@ -89,4 +83,9 @@ const CreatePaymentRequest = () => {
   );
 };
 
-export default CreatePaymentRequest;
+CreatePaymentForm.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+};
+
+export default CreatePaymentForm;

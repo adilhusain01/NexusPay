@@ -9,7 +9,7 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     fetchClientPaymentHistory();
-  }, []);
+  }, [fetchClientPaymentHistory]);
 
   return (
     <div className='max-w-6xl mx-auto px-4 py-12'>
@@ -27,8 +27,21 @@ const ClientDashboard = () => {
       </motion.div>
 
       <div className='grid lg:grid-cols-2 gap-8'>
-        <MakePayment />
-        <PaymentHistory />
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <MakePayment />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <PaymentHistory />
+        </motion.div>
       </div>
     </div>
   );

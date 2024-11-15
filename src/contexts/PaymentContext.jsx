@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { useWallet } from './WalletContext';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../utils/contractHelpers';
 import toast from 'react-hot-toast';
+import PropTypes from 'prop-types';
 
 const PaymentContext = createContext();
 
@@ -15,8 +16,9 @@ export const PaymentProvider = ({ children }) => {
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [clientPayments, setClientPayments] = useState([]);
   const [processingPayments, setProcessingPayments] = useState(new Set());
+  const [sellerPaymentHistory, setSellerPaymentHistory] = useState([]);
+  const [paymentWindow, setPaymentWindow] = useState(null);
 
-  // Initialize contract and check seller status
   useEffect(() => {
     if (signer) {
       const paymentContract = new ethers.Contract(
@@ -27,12 +29,12 @@ export const PaymentProvider = ({ children }) => {
       setContract(paymentContract);
       checkSellerStatus();
       if (account) {
+        fetchSellerPaymentHistory();
         fetchClientPaymentHistory();
       }
     }
   }, [signer, account]);
 
-  // Set up event listeners
   useEffect(() => {
     if (contract) {
       const handlePaymentRequestCreated = (
@@ -52,6 +54,8 @@ export const PaymentProvider = ({ children }) => {
         };
 
         setPaymentRequests((prev) => [...prev, newRequest]);
+
+        showPaymentWindow(paymentId, ethers.utils.formatEther(amount));
       };
 
       const handlePaymentCompleted = (paymentId, buyer, seller, amount) => {
@@ -68,9 +72,12 @@ export const PaymentProvider = ({ children }) => {
           )
         );
 
-        // If the current user is the buyer, refresh their payment history
         if (buyer.toLowerCase() === account?.toLowerCase()) {
           fetchClientPaymentHistory();
+        }
+
+        if (seller.toLowerCase() === account?.toLowerCase()) {
+          fetchSellerPaymentHistory();
         }
       };
 
@@ -82,12 +89,10 @@ export const PaymentProvider = ({ children }) => {
         );
       };
 
-      // Subscribe to events
       contract.on('PaymentRequestCreated', handlePaymentRequestCreated);
       contract.on('PaymentCompleted', handlePaymentCompleted);
       contract.on('PaymentExpired', handlePaymentExpired);
 
-      // Cleanup function
       return () => {
         contract.off('PaymentRequestCreated', handlePaymentRequestCreated);
         contract.off('PaymentCompleted', handlePaymentCompleted);
@@ -112,6 +117,27 @@ export const PaymentProvider = ({ children }) => {
     } catch (error) {
       console.error('Error checking seller status:', error);
       toast.error('Failed to fetch seller status');
+    }
+  };
+
+  const fetchSellerPaymentHistory = async () => {
+    if (!contract || !account) return;
+    try {
+      const [paymentIds, buyers, amounts, timestamps, isPaid] =
+        await contract.getSellerPaymentHistory(account);
+
+      const history = paymentIds.map((paymentId, index) => ({
+        paymentId,
+        buyer: buyers[index],
+        amount: ethers.utils.formatEther(amounts[index]),
+        timestamp: timestamps[index].toNumber(),
+        isPaid: isPaid[index],
+      }));
+
+      setSellerPaymentHistory(history);
+    } catch (error) {
+      console.error('Error fetching seller payment history:', error);
+      toast.error('Failed to fetch payment history');
     }
   };
 
@@ -198,7 +224,7 @@ export const PaymentProvider = ({ children }) => {
       const amountInWei = ethers.utils.parseEther(amountInEth.toString());
       const tx = await contract.makePayment(paymentId, { value: amountInWei });
       await tx.wait();
-      await fetchClientPaymentHistory(); // Refresh payment history after successful payment
+      await fetchClientPaymentHistory();
       toast.success('Payment completed successfully!');
       return { success: true, transaction: tx };
     } catch (error) {
@@ -220,12 +246,22 @@ export const PaymentProvider = ({ children }) => {
     try {
       const [isPaid, isExpired, remainingTime, buyer] =
         await contract.checkPaymentStatus(paymentId);
-      const request = paymentRequests.find(
-        (req) => req.paymentId === paymentId
-      );
 
-      // If the payment is expired but not marked in our state, mark it
-      if (isExpired && request?.status === 'pending') {
+      const paymentRequest = await contract.paymentRequests(paymentId);
+
+      const paymentDetails = {
+        paymentId,
+        seller: paymentRequest.seller,
+        amount: ethers.utils.formatEther(paymentRequest.amount),
+        expiryTime: paymentRequest.expiryTime.toNumber(),
+        isPaid: paymentRequest.isPaid,
+        isExpired: paymentRequest.isExpired,
+        buyer: paymentRequest.buyer,
+        status: isPaid ? 'completed' : isExpired ? 'expired' : 'pending',
+        createdAt: paymentRequest.expiryTime.toNumber() - 180,
+      };
+
+      if (isExpired && !paymentRequest.isExpired) {
         await contract.markPaymentExpired(paymentId);
       }
 
@@ -234,7 +270,7 @@ export const PaymentProvider = ({ children }) => {
         isExpired,
         remainingTime: remainingTime.toNumber(),
         buyer,
-        paymentDetails: request,
+        paymentDetails,
       };
     } catch (error) {
       console.error('Error checking payment status:', error);
@@ -242,16 +278,40 @@ export const PaymentProvider = ({ children }) => {
     }
   };
 
-  const getPaymentRequests = (filter = 'all') => {
-    switch (filter) {
-      case 'pending':
-        return paymentRequests.filter((req) => req.status === 'pending');
-      case 'completed':
-        return paymentRequests.filter((req) => req.status === 'completed');
-      case 'expired':
-        return paymentRequests.filter((req) => req.status === 'expired');
-      default:
-        return paymentRequests;
+  const getPaymentRequests = () => {
+    return paymentRequests;
+  };
+
+  const showPaymentWindow = (paymentId, amount) => {
+    const qrCodeSrc = paymentId;
+    setPaymentWindow({
+      paymentId,
+      amount,
+      qrCodeSrc,
+      expiryTime: null,
+      isPaid: false,
+    });
+  };
+
+  const closePaymentWindow = () => {
+    setPaymentWindow(null);
+  };
+
+  const updatePaymentWindowStatus = async (paymentId) => {
+    if (!paymentWindow || paymentWindow.paymentId !== paymentId) return;
+
+    try {
+      const { isPaid, isExpired, remainingTime, buyer } =
+        await checkPaymentStatus(paymentId);
+      setPaymentWindow((prev) => ({
+        ...prev,
+        expiryTime: remainingTime,
+        isPaid,
+        isExpired,
+        buyer,
+      }));
+    } catch (error) {
+      console.error('Error updating payment window status:', error);
     }
   };
 
@@ -271,11 +331,23 @@ export const PaymentProvider = ({ children }) => {
         getPaymentRequests,
         fetchClientPaymentHistory,
         getClientPaymentCount,
+
+        showPaymentWindow,
+        closePaymentWindow,
+        paymentWindow,
+        updatePaymentWindowStatus,
+
+        sellerPaymentHistory,
+        fetchSellerPaymentHistory,
       }}
     >
       {children}
     </PaymentContext.Provider>
   );
+};
+
+PaymentProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export const usePayment = () => useContext(PaymentContext);

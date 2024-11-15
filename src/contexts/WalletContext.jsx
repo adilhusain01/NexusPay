@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import PropTypes from 'prop-types';
 
 const WalletContext = createContext();
 
@@ -24,7 +25,7 @@ export const WalletProvider = ({ children }) => {
 
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send('eth_requestAccounts', []); // Request account access if needed
+      await provider.send('eth_requestAccounts', []);
       const signer = provider.getSigner();
       const address = await signer.getAddress();
 
@@ -32,7 +33,6 @@ export const WalletProvider = ({ children }) => {
       setAccount(address);
       localStorage.setItem('walletAddress', address);
 
-      // Listen for account changes
       window.ethereum.on('accountsChanged', handleAccountChange);
 
       return signer;
@@ -60,7 +60,6 @@ export const WalletProvider = ({ children }) => {
     }
   };
 
-  // Ensure the event listener is set up correctly
   useEffect(() => {
     if (window.ethereum) {
       console.log('Setting up accountsChanged listener');
@@ -82,6 +81,10 @@ export const WalletProvider = ({ children }) => {
       {children}
     </WalletContext.Provider>
   );
+};
+
+WalletProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export const useWallet = () => useContext(WalletContext);
