@@ -72,7 +72,7 @@ const Navbar = () => {
             ) : (
               <Button
                 onClick={connectWallet}
-                className='bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
+                className='flex flex-row bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
               >
                 <Wallet className='w-4 h-4 mr-2' />
                 Connect Wallet
@@ -109,7 +109,7 @@ const Navbar = () => {
                   ) : (
                     <Button
                       onClick={connectWallet}
-                      className='bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
+                      className='flex flex-row bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
                     >
                       <Wallet className='w-4 h-4 mr-2' />
                       Connect Wallet
