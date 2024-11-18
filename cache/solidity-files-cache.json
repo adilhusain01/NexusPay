@@ -1,8 +1,8 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/home/adil/Desktop/QR Web3/v4/client/contracts/PaymentPlatform.sol": {
-      "lastModificationDate": 1731518920836,
+    "/home/adil/Desktop/QR Web3/NexusPay/client/contracts/PaymentPlatform.sol": {
+      "lastModificationDate": 1731519163619,
       "contentHash": "38a2874a99a49385d381b6c6bcef0e73",
       "sourceName": "contracts/PaymentPlatform.sol",
       "solcConfig": {
