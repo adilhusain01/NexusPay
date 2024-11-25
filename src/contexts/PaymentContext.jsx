@@ -15,8 +15,8 @@ export const PaymentProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [clientPayments, setClientPayments] = useState([]);
+  const [sellerPayments, setSellerPayments] = useState([]);
   const [processingPayments, setProcessingPayments] = useState(new Set());
-  const [sellerPaymentHistory, setSellerPaymentHistory] = useState([]);
   const [paymentWindow, setPaymentWindow] = useState(null);
 
   useEffect(() => {
@@ -101,6 +101,30 @@ export const PaymentProvider = ({ children }) => {
     }
   }, [contract, account]);
 
+  useEffect(() => {
+    if (contract) {
+      const handleDirectPayment = async (from, to, amount) => {
+        // Update histories when a direct wallet payment is detected
+        if (from.toLowerCase() === account?.toLowerCase() || 
+            to.toLowerCase() === account?.toLowerCase()) {
+          await Promise.all([
+            fetchClientPaymentHistory(),
+            fetchSellerPaymentHistory()
+          ]);
+        }
+      };
+
+      // Listen for Transfer events (for direct wallet payments)
+      if (signer?.provider) {
+        signer.provider.on('Transfer', handleDirectPayment);
+        
+        return () => {
+          signer.provider.off('Transfer', handleDirectPayment);
+        };
+      }
+    }
+  }, [contract, account, signer]);
+
   const checkSellerStatus = async () => {
     if (!contract || !account) return;
     try {
@@ -120,47 +144,86 @@ export const PaymentProvider = ({ children }) => {
     }
   };
 
+  const fetchClientPaymentHistory = async () => {
+    if (!contract || !account) return;
+    try {
+      // Fetch regular payment history
+      const [paymentIds, sellers, businessNames, amounts, timestamps] =
+        await contract.getClientPaymentHistory(account);
+
+      // Fetch direct payment history
+      const [directRecipients, directAmounts, directTimestamps] =
+        await contract.getClientDirectPayments(account);
+
+      // Combine both types of payments
+      const regularHistory = paymentIds.map((paymentId, index) => ({
+        paymentId,
+        seller: sellers[index],
+        businessName: businessNames[index],
+        amount: ethers.utils.formatEther(amounts[index]),
+        timestamp: timestamps[index].toNumber(),
+        type: 'regular'
+      }));
+
+      const directHistory = directRecipients.map((recipient, index) => ({
+        recipient,
+        amount: ethers.utils.formatEther(directAmounts[index]),
+        timestamp: directTimestamps[index].toNumber(),
+        type: 'direct'
+      }));
+
+      // Combine and sort by timestamp
+      const allPayments = [...regularHistory, ...directHistory]
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      setClientPayments(allPayments);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      toast.error('Failed to fetch payment history');
+    }
+  };
+
+  // Update fetchSellerPaymentHistory to include direct wallet payments
   const fetchSellerPaymentHistory = async () => {
     if (!contract || !account) return;
     try {
+      // Fetch regular payment history
       const [paymentIds, buyers, amounts, timestamps, isPaid] =
         await contract.getSellerPaymentHistory(account);
 
-      const history = paymentIds.map((paymentId, index) => ({
+      // Fetch direct payment history
+      const [directPayers, directAmounts, directTimestamps] =
+        await contract.getSellerDirectPayments(account);
+
+      // Combine both types of payments
+      const regularHistory = paymentIds.map((paymentId, index) => ({
         paymentId,
         buyer: buyers[index],
         amount: ethers.utils.formatEther(amounts[index]),
         timestamp: timestamps[index].toNumber(),
         isPaid: isPaid[index],
+        type: 'regular'
       }));
 
-      setSellerPaymentHistory(history);
+      const directHistory = directPayers.map((payer, index) => ({
+        payer,
+        amount: ethers.utils.formatEther(directAmounts[index]),
+        timestamp: directTimestamps[index].toNumber(),
+        isPaid: true, // Direct payments are always paid
+        type: 'direct'
+      }));
+
+      // Combine and sort by timestamp
+      const allPayments = [...regularHistory, ...directHistory]
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      setSellerPayments(allPayments);
     } catch (error) {
       console.error('Error fetching seller payment history:', error);
       toast.error('Failed to fetch payment history');
     }
   };
 
-  const fetchClientPaymentHistory = async () => {
-    if (!contract || !account) return;
-    try {
-      const [paymentIds, sellers, businessNames, amounts, timestamps] =
-        await contract.getClientPaymentHistory(account);
-
-      const history = paymentIds.map((paymentId, index) => ({
-        paymentId,
-        seller: sellers[index],
-        businessName: businessNames[index],
-        amount: ethers.utils.formatEther(amounts[index]),
-        timestamp: timestamps[index].toNumber(),
-      }));
-
-      setClientPayments(history);
-    } catch (error) {
-      console.error('Error fetching client payment history:', error);
-      toast.error('Failed to fetch payment history');
-    }
-  };
 
   const getClientPaymentCount = async (clientAddress) => {
     if (!contract) throw new Error('Contract not initialized');
@@ -240,6 +303,67 @@ export const PaymentProvider = ({ children }) => {
       });
     }
   };
+
+  const makeWalletPayment = async (recipientAddress, amount) => {
+    if (!signer) throw new Error('Wallet not connected');
+    if (processingPayments.has(recipientAddress)) {
+      toast.error('Payment is already being processed');
+      return;
+    }
+
+    setLoading(true);
+    setProcessingPayments((prev) => new Set(prev).add(recipientAddress));
+
+    try {
+      // Convert amount to Wei
+      const amountInWei = ethers.utils.parseEther(amount.toString());
+      
+      // Create and send the transaction
+      const tx = await signer.sendTransaction({
+        to: recipientAddress,
+        value: amountInWei
+      });
+
+      // Wait for transaction confirmation
+      await tx.wait();
+
+      // Update payment histories
+      await Promise.all([
+        fetchClientPaymentHistory(),
+        fetchSellerPaymentHistory()
+      ]);
+
+      // Record the direct payment in contract if the recipient is a registered seller
+      if (contract) {
+        try {
+          const recipientInfo = await contract.sellers(recipientAddress);
+          if (recipientInfo.isRegistered) {
+            const recordTx = await contract.recordDirectPayment(recipientAddress, amountInWei);
+            await recordTx.wait();
+          }
+        } catch (error) {
+          console.warn('Error recording direct payment:', error);
+          // Don't throw here as the payment itself was successful
+        }
+      }
+
+      toast.success('Payment sent successfully!');
+      return { success: true, transaction: tx };
+    } catch (error) {
+      console.error('Error making wallet payment:', error);
+      toast.error('Payment failed');
+      throw error;
+    } finally {
+      setLoading(false);
+      setProcessingPayments((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(recipientAddress);
+        return newSet;
+      });
+    }
+  };
+
+
 
   const checkPaymentStatus = async (paymentId) => {
     if (!contract) throw new Error('Contract not initialized');
@@ -324,20 +448,19 @@ export const PaymentProvider = ({ children }) => {
         loading,
         paymentRequests,
         clientPayments,
+        sellerPayments,
         registerSeller,
         createPaymentRequest,
         makePayment,
+        makeWalletPayment,
         checkPaymentStatus,
         getPaymentRequests,
         fetchClientPaymentHistory,
         getClientPaymentCount,
-
         showPaymentWindow,
         closePaymentWindow,
         paymentWindow,
         updatePaymentWindowStatus,
-
-        sellerPaymentHistory,
         fetchSellerPaymentHistory,
       }}
     >

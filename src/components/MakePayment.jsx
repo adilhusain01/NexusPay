@@ -6,21 +6,55 @@ import { XCircle, Wallet, ArrowRight, CheckCircle, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import QRCodeScanner from './QRCodeScanner';
-import PropTypes from 'prop-types';
+import DetailItem from './DetailItem';
 
 const MakePayment = () => {
-  const { makePayment, checkPaymentStatus, loading } = usePayment();
+  const { makePayment, makeWalletPayment, checkPaymentStatus, loading, fetchClientPaymentHistory } = usePayment();
   const [paymentId, setPaymentId] = useState('');
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState('');
+  const [isWalletPayment, setIsWalletPayment] = useState(false);
+  const [amount, setAmount] = useState('');
 
-  const handleCheckPayment = async (e) => {
-    e.preventDefault();
+  const resetState = () => {
+    setPaymentId('');
+    setPaymentStatus(null);
+    setPaymentDetails(null);
+    setIsConfirming(false);
     setError('');
+    setIsWalletPayment(false);
+    setAmount('');
+  };
+
+  const handleCheckPayment = async (scannedCode) => {
+    setError('');
+
+    // Robust payment type detection
+    const isValidWalletAddress = /^0x[a-fA-F0-9]{40}$/.test(scannedCode);
+    const isValidPaymentId = /^pay_[a-zA-Z0-9]{13}$/.test(scannedCode);
+
+    if (!isValidWalletAddress && !isValidPaymentId) {
+      setError('Invalid QR code format');
+      toast.error('Invalid QR code format');
+      return;
+    }
+
+    setPaymentId(scannedCode);
+    setIsWalletPayment(isValidWalletAddress);
+
+    if (isValidWalletAddress) {
+      setPaymentDetails({
+        type: 'wallet',
+        address: scannedCode,
+        status: 'ready'
+      });
+      return;
+    }
+    
     try {
-      const status = await checkPaymentStatus(paymentId);
+      const status = await checkPaymentStatus(scannedCode);
       setPaymentStatus(status);
 
       if (status.paymentDetails) {
@@ -43,17 +77,31 @@ const MakePayment = () => {
   const handleMakePayment = async () => {
     setError('');
     try {
-      await makePayment(paymentId, paymentDetails.amount);
-      const status = await checkPaymentStatus(paymentId);
-      setPaymentStatus(status);
+      if (isWalletPayment) {
+        if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+          setError('Please enter a valid amount');
+          toast.error('Please enter a valid amount');
+          return;
+        }
 
-      if (status.paymentDetails) {
-        setPaymentDetails(status.paymentDetails);
-      }
-
-      if (status.isPaid) {
-        setPaymentId(''); // Clear payment ID after successful payment
+        await makeWalletPayment(paymentId, parseFloat(amount));
         toast.success('Payment successful');
+        resetState();
+        await fetchClientPaymentHistory();
+      } else {
+        await makePayment(paymentId, paymentDetails.amount);
+        const status = await checkPaymentStatus(paymentId);
+        setPaymentStatus(status);
+
+        if (status.paymentDetails) {
+          setPaymentDetails(status.paymentDetails);
+        }
+
+        if (status.isPaid) {
+          toast.success('Payment successful');
+          resetState();
+          await fetchClientPaymentHistory();
+        }
       }
     } catch (error) {
       setError('Payment failed. Please try again.');
@@ -62,14 +110,9 @@ const MakePayment = () => {
     }
   };
 
-  const handleScanQRCode = async (scannedPaymentId) => {
-    setPaymentId(scannedPaymentId);
-    await handleCheckPayment({ preventDefault: () => {} });
-  };
-
   useEffect(() => {
     let interval;
-    if (paymentDetails && !paymentStatus?.isPaid && !paymentStatus?.isExpired) {
+    if (paymentDetails && !isWalletPayment && !paymentStatus?.isPaid && !paymentStatus?.isExpired) {
       interval = setInterval(async () => {
         try {
           const status = await checkPaymentStatus(paymentId);
@@ -89,7 +132,7 @@ const MakePayment = () => {
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [paymentDetails, paymentStatus, paymentId]);
+  }, [paymentDetails, paymentStatus, paymentId, isWalletPayment]);
 
   return (
     <Card className='bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 shadow-xl'>
@@ -105,30 +148,9 @@ const MakePayment = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className='space-y-6'>
-        <form onSubmit={handleCheckPayment} className='space-y-4'>
-          <div>
-            <label className='block text-sm font-medium text-slate-300 mb-2'>
-              Payment ID
-            </label>
-            <input
-              type='text'
-              value={paymentId}
-              onChange={(e) => setPaymentId(e.target.value)}
-              className='w-full px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-50 transition duration-200'
-              placeholder='Enter payment ID'
-              required
-            />
-          </div>
-          <QRCodeScanner onScan={handleScanQRCode} />
-          <Button
-            type='submit'
-            disabled={loading}
-            className='flex flex-row w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105'
-          >
-            {loading ? 'Checking...' : 'Check Payment'}
-            <ArrowRight className='w-5 h-5 ml-2' />
-          </Button>
-        </form>
+        <div className='flex justify-center'>
+          <QRCodeScanner onScan={handleCheckPayment} />
+        </div>
 
         <AnimatePresence>
           {error && (
@@ -158,31 +180,61 @@ const MakePayment = () => {
                 Payment Details
               </h3>
               <div className='space-y-4'>
-                <DetailItem
-                  label='Amount'
-                  value={`${paymentDetails.amount} ETH`}
-                />
-                <DetailItem
-                  label='Status'
-                  value={paymentDetails.status}
-                  isStatus
-                />
-                <DetailItem
-                  label='Created'
-                  value={new Date(
-                    paymentDetails.createdAt * 1000
-                  ).toLocaleString()}
-                />
-                {paymentStatus?.remainingTime > 0 && (
-                  <DetailItem
-                    label='Time Remaining'
-                    value={`${Math.floor(paymentStatus.remainingTime)} seconds`}
-                    icon={<Clock className='w-5 h-5 text-indigo-400' />}
-                  />
+                {isWalletPayment ? (
+                  <>
+                    <DetailItem
+                      label='Recipient Address'
+                      value={`${paymentDetails.address.slice(0, 6)}...${paymentDetails.address.slice(-4)}`}
+                    />
+                    <div>
+                      <label className='block text-sm font-medium text-slate-300 mb-2'>
+                        Amount (ETH)
+                      </label>
+                      <input
+                        type='number'
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className='w-full px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-50 transition duration-200'
+                        placeholder='Enter amount to send'
+                        step='0.001'
+                        min='0'
+                        required
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <DetailItem
+                      label='Payment ID'
+                      value={paymentId}
+                    />
+                    <DetailItem
+                      label='Amount'
+                      value={`${paymentDetails.amount} ETH`}
+                    />
+                    <DetailItem
+                      label='Status'
+                      value={paymentDetails.status}
+                      isStatus
+                    />
+                    <DetailItem
+                      label='Created'
+                      value={new Date(
+                        paymentDetails.createdAt * 1000
+                      ).toLocaleString()}
+                    />
+                    {paymentStatus?.remainingTime > 0 && (
+                      <DetailItem
+                        label='Time Remaining'
+                        value={`${Math.floor(paymentStatus.remainingTime)} seconds`}
+                        icon={<Clock className='w-5 h-5 text-indigo-400' />}
+                      />
+                    )}
+                  </>
                 )}
               </div>
 
-              {!paymentStatus?.isPaid && !paymentStatus?.isExpired && (
+              {(!paymentStatus?.isPaid && !paymentStatus?.isExpired) && (
                 <motion.div layout className='mt-6'>
                   {!isConfirming ? (
                     <Button
@@ -196,7 +248,7 @@ const MakePayment = () => {
                     <div className='flex space-x-3'>
                       <Button
                         onClick={handleMakePayment}
-                        disabled={loading}
+                        disabled={loading || (isWalletPayment && !amount)}
                         className='flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 rounded-lg transition duration-300 ease-in-out transform hover:scale-105'
                       >
                         {loading ? 'Processing...' : 'Pay Now'}
@@ -213,28 +265,32 @@ const MakePayment = () => {
               )}
 
               <AnimatePresence>
-                {paymentStatus?.isExpired && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className='flex items-center justify-center mt-6 text-red-400 bg-red-500/10 p-3 rounded-lg'
-                  >
-                    <XCircle className='w-5 h-5 mr-2' />
-                    <span className='font-medium'>Payment request expired</span>
-                  </motion.div>
-                )}
+                {!isWalletPayment && (
+                  <>
+                    {paymentStatus?.isExpired && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className='flex items-center justify-center mt-6 text-red-400 bg-red-500/10 p-3 rounded-lg'
+                      >
+                        <XCircle className='w-5 h-5 mr-2' />
+                        <span className='font-medium'>Payment request expired</span>
+                      </motion.div>
+                    )}
 
-                {paymentStatus?.isPaid && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className='flex items-center justify-center mt-6 text-green-400 bg-green-500/10 p-3 rounded-lg'
-                  >
-                    <CheckCircle className='w-5 h-5 mr-2' />
-                    <span className='font-medium'>Payment completed</span>
-                  </motion.div>
+                    {paymentStatus?.isPaid && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className='flex items-center justify-center mt-6 text-green-400 bg-green-500/10 p-3 rounded-lg'
+                      >
+                        <CheckCircle className='w-5 h-5 mr-2' />
+                        <span className='font-medium'>Payment completed</span>
+                      </motion.div>
+                    )}
+                  </>
                 )}
               </AnimatePresence>
             </motion.div>
@@ -243,27 +299,6 @@ const MakePayment = () => {
       </CardContent>
     </Card>
   );
-};
-
-const DetailItem = ({ label, value, icon, isStatus }) => (
-  <div className='flex justify-between items-center'>
-    <span className='text-slate-400'>{label}:</span>
-    <span
-      className={`text-slate-50 font-medium flex items-center ${
-        isStatus ? 'capitalize' : ''
-      }`}
-    >
-      {icon && <span className='mr-2'>{icon}</span>}
-      {value}
-    </span>
-  </div>
-);
-
-DetailItem.propTypes = {
-  label: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  icon: PropTypes.element,
-  isStatus: PropTypes.bool,
 };
 
 export default MakePayment;

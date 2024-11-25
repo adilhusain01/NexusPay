@@ -23,6 +23,7 @@ const QRCodeScanner = ({ onScan }) => {
   }, []);
 
   const startScanning = () => {
+    setError('');
     setIsLoading(true);
     setIsScanning(true);
     navigator.mediaDevices
@@ -58,11 +59,12 @@ const QRCodeScanner = ({ onScan }) => {
   const handleScanResult = (result) => {
     if (result) {
       setIsProcessing(true);
-      if (isValidPaymentQR(result)) {
+      setError(false)
+      if (isValidQRFormat(result)) {
         onScan(result);
         stopScanning();
       } else {
-        setError('Invalid QR code format. Please try again.');
+        setError('Invalid QR code format. Please scan a valid payment request or wallet address.');
       }
       setIsProcessing(false);
     }
@@ -87,9 +89,14 @@ const QRCodeScanner = ({ onScan }) => {
     }
   };
 
-  const isValidPaymentQR = (data) => {
-    const example = 'pay_1731519811637';
-    return data.startsWith('pay_') && data.length === example.length;
+  const isValidQRFormat = (data) => {
+    // Check for payment request format
+    const isPaymentRequest = data.startsWith('pay_') && data.length === 'pay_1731519811637'.length;
+    
+    // Check for Ethereum address format (0x followed by 40 hex characters)
+    const isEthereumAddress = /^0x[a-fA-F0-9]{40}$/.test(data);
+    
+    return isPaymentRequest || isEthereumAddress;
   };
 
   const retryScanning = () => {

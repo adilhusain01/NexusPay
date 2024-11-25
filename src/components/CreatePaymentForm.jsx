@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, ArrowRight, XCircle } from 'lucide-react';
+import { Wallet, ArrowRight, XCircle, QrCode } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PropTypes from 'prop-types';
+import { useWallet } from '../contexts/WalletContext';
+import StaticQRWindow from './StaticQRWindow';
 
 const CreatePaymentForm = ({ loading, onSubmit }) => {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
+  const [showStaticQR, setShowStaticQR] = useState(false);
+  const { account } = useWallet();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,14 +32,25 @@ const CreatePaymentForm = ({ loading, onSubmit }) => {
     >
       <Card className='bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700'>
         <CardHeader>
-          <CardTitle className='flex items-center gap-3 text-slate-50'>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className='w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center'
+          <CardTitle className='flex items-center justify-between text-slate-50'>
+            <div className='flex items-center gap-3'>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className='w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center'
+              >
+                <Wallet className='w-5 h-5 text-indigo-400' />
+              </motion.div>
+              Create Request
+            </div>
+            <Button
+              variant="ghost"
+              size="md"
+              className="flex items-center gap-2 text-slate-400 hover:text-slate-100"
+              onClick={() => setShowStaticQR(true)}
             >
-              <Wallet className='w-5 h-5 text-indigo-400' />
-            </motion.div>
-            Create Payment Request
+              <QrCode className="w-4 h-4" />
+              Show Wallet QR
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -79,6 +94,13 @@ const CreatePaymentForm = ({ loading, onSubmit }) => {
           )}
         </CardContent>
       </Card>
+
+      {showStaticQR && (
+        <StaticQRWindow
+          walletAddress={account}
+          onClose={() => setShowStaticQR(false)}
+        />
+      )}
     </motion.div>
   );
 };

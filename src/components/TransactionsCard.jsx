@@ -12,7 +12,7 @@ const TransactionsCard = ({ totalTransactions }) => (
 );
 
 TransactionsCard.propTypes = {
-  totalTransactions: PropTypes.number.isRequired,
-};
+  totalTransactions: PropTypes.string,
+}
 
 export default TransactionsCard;

@@ -12,7 +12,7 @@ const BusinessInfo = ({ businessName }) => (
 );
 
 BusinessInfo.propTypes = {
-  businessName: PropTypes.string.isRequired,
+  businessName: PropTypes.string,
 };
 
 export default BusinessInfo;

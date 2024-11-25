@@ -44,7 +44,7 @@ const PaymentHistory = () => {
                 <tbody className='divide-y divide-slate-700'>
                   {clientPayments.map((payment, index) => (
                     <motion.tr
-                      key={payment.paymentId}
+                      key={payment.paymentId || payment.timestamp}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
@@ -54,7 +54,7 @@ const PaymentHistory = () => {
                         {formatDate(payment.timestamp)}
                       </td>
                       <td className='px-6 py-4 whitespace-nowrap text-sm text-slate-300'>
-                        {payment.businessName}
+                        {payment.businessName || `${payment.recipient.slice(0, 6)}...${payment.recipient.slice(-4)}`}
                       </td>
                       <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-400'>
                         {payment.amount} ETH

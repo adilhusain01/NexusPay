@@ -1,506 +1,613 @@
-const CONTRACT_ADDRESS = '0xa8ecC3bf2c82450c7698e46635C187E9646DA5e5';
+const CONTRACT_ADDRESS = '0x823d623f0b9a3A02e652667be249639645cf7ff7';
 const CONTRACT_ABI = [
   {
-    inputs: [],
-    stateMutability: 'nonpayable',
-    type: 'constructor',
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
       },
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'buyer',
-        type: 'address',
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
       },
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'seller',
-        type: 'address',
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       },
       {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
     ],
-    name: 'PaymentCompleted',
-    type: 'event',
+    "name": "DirectPaymentRecorded",
+    "type": "event"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
+        "indexed": false,
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
       },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
     ],
-    name: 'PaymentExpired',
-    type: 'event',
+    "name": "PaymentCompleted",
+    "type": "event"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
-      },
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'seller',
-        type: 'address',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
-      {
-        indexed: false,
-        internalType: 'uint256',
-        name: 'expiryTime',
-        type: 'uint256',
-      },
+        "indexed": false,
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
+      }
     ],
-    name: 'PaymentRequestCreated',
-    type: 'event',
+    "name": "PaymentExpired",
+    "type": "event"
   },
   {
-    anonymous: false,
-    inputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        indexed: true,
-        internalType: 'address',
-        name: 'sellerAddress',
-        type: 'address',
+        "indexed": false,
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
       },
       {
-        indexed: false,
-        internalType: 'string',
-        name: 'businessName',
-        type: 'string',
+        "indexed": true,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
       },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expiryTime",
+        "type": "uint256"
+      }
     ],
-    name: 'SellerRegistered',
-    type: 'event',
+    "name": "PaymentRequestCreated",
+    "type": "event"
   },
   {
-    inputs: [],
-    name: 'PAYMENT_WINDOW',
-    outputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
+        "indexed": true,
+        "internalType": "address",
+        "name": "sellerAddress",
+        "type": "address"
       },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "businessName",
+        "type": "string"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "name": "SellerRegistered",
+    "type": "event"
   },
   {
-    inputs: [
+    "inputs": [],
+    "name": "PAYMENT_WINDOW",
+    "outputs": [
       {
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    name: 'checkPaymentStatus',
-    outputs: [
-      {
-        internalType: 'bool',
-        name: 'isPaid',
-        type: 'bool',
-      },
-      {
-        internalType: 'bool',
-        name: 'isExpired',
-        type: 'bool',
-      },
-      {
-        internalType: 'uint256',
-        name: 'remainingTime',
-        type: 'uint256',
-      },
-      {
-        internalType: 'address',
-        name: 'buyer',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
-      },
-      {
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
+      }
     ],
-    name: 'createPaymentRequest',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "name": "checkPaymentStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "isPaid",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isExpired",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "remainingTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'uint256',
-        name: 'offset',
-        type: 'uint256',
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
       },
       {
-        internalType: 'uint256',
-        name: 'limit',
-        type: 'uint256',
-      },
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
     ],
-    name: 'getAllSellers',
-    outputs: [
-      {
-        internalType: 'address[]',
-        name: 'addresses',
-        type: 'address[]',
-      },
-      {
-        internalType: 'string[]',
-        name: 'businessNames',
-        type: 'string[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'transactions',
-        type: 'uint256[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'amounts',
-        type: 'uint256[]',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
+    "name": "createPaymentRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'address',
-        name: 'client',
-        type: 'address',
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
       },
-    ],
-    name: 'getClientPaymentCount',
-    outputs: [
       {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
+        "internalType": "uint256",
+        "name": "limit",
+        "type": "uint256"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "name": "getAllSellers",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "addresses",
+        "type": "address[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "businessNames",
+        "type": "string[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "transactions",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'address',
-        name: 'client',
-        type: 'address',
-      },
+        "internalType": "address",
+        "name": "client",
+        "type": "address"
+      }
     ],
-    name: 'getClientPaymentHistory',
-    outputs: [
+    "name": "getClientDirectPayments",
+    "outputs": [
       {
-        internalType: 'string[]',
-        name: 'paymentIds',
-        type: 'string[]',
+        "internalType": "address[]",
+        "name": "recipients",
+        "type": "address[]"
       },
       {
-        internalType: 'address[]',
-        name: 'sellers',
-        type: 'address[]',
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
       },
       {
-        internalType: 'string[]',
-        name: 'businessNames',
-        type: 'string[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'amounts',
-        type: 'uint256[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'timestamps',
-        type: 'uint256[]',
-      },
+        "internalType": "uint256[]",
+        "name": "timestamps",
+        "type": "uint256[]"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'address',
-        name: 'seller',
-        type: 'address',
-      },
+        "internalType": "address",
+        "name": "client",
+        "type": "address"
+      }
     ],
-    name: 'getSellerPaymentHistory',
-    outputs: [
+    "name": "getClientPaymentCount",
+    "outputs": [
       {
-        internalType: 'string[]',
-        name: 'paymentIds',
-        type: 'string[]',
-      },
-      {
-        internalType: 'address[]',
-        name: 'buyers',
-        type: 'address[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'amounts',
-        type: 'uint256[]',
-      },
-      {
-        internalType: 'uint256[]',
-        name: 'timestamps',
-        type: 'uint256[]',
-      },
-      {
-        internalType: 'bool[]',
-        name: 'isPaid',
-        type: 'bool[]',
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'address',
-        name: 'sellerAddress',
-        type: 'address',
-      },
+        "internalType": "address",
+        "name": "client",
+        "type": "address"
+      }
     ],
-    name: 'getSellerStats',
-    outputs: [
+    "name": "getClientPaymentHistory",
+    "outputs": [
       {
-        internalType: 'string',
-        name: 'businessName',
-        type: 'string',
+        "internalType": "string[]",
+        "name": "paymentIds",
+        "type": "string[]"
       },
       {
-        internalType: 'uint256',
-        name: 'totalTransactions',
-        type: 'uint256',
+        "internalType": "address[]",
+        "name": "sellers",
+        "type": "address[]"
       },
       {
-        internalType: 'uint256',
-        name: 'totalAmount',
-        type: 'uint256',
+        "internalType": "string[]",
+        "name": "businessNames",
+        "type": "string[]"
       },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "timestamps",
+        "type": "uint256[]"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
-      },
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      }
     ],
-    name: 'makePayment',
-    outputs: [],
-    stateMutability: 'payable',
-    type: 'function',
+    "name": "getSellerDirectPayments",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "payers",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "timestamps",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
-      },
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      }
     ],
-    name: 'markPaymentExpired',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "name": "getSellerPaymentHistory",
+    "outputs": [
+      {
+        "internalType": "string[]",
+        "name": "paymentIds",
+        "type": "string[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "buyers",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "timestamps",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bool[]",
+        "name": "isPaid",
+        "type": "bool[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: 'owner',
-    outputs: [
+    "inputs": [
       {
-        internalType: 'address',
-        name: '',
-        type: 'address',
-      },
+        "internalType": "address",
+        "name": "sellerAddress",
+        "type": "address"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "name": "getSellerStats",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "businessName",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalTransactions",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'string',
-        name: '',
-        type: 'string',
-      },
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
+      }
     ],
-    name: 'paymentRequests',
-    outputs: [
-      {
-        internalType: 'string',
-        name: 'paymentId',
-        type: 'string',
-      },
-      {
-        internalType: 'address payable',
-        name: 'seller',
-        type: 'address',
-      },
-      {
-        internalType: 'uint256',
-        name: 'amount',
-        type: 'uint256',
-      },
-      {
-        internalType: 'uint256',
-        name: 'expiryTime',
-        type: 'uint256',
-      },
-      {
-        internalType: 'bool',
-        name: 'isPaid',
-        type: 'bool',
-      },
-      {
-        internalType: 'bool',
-        name: 'isExpired',
-        type: 'bool',
-      },
-      {
-        internalType: 'address',
-        name: 'buyer',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
+    "name": "makePayment",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'string',
-        name: 'businessName',
-        type: 'string',
-      },
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
+      }
     ],
-    name: 'registerSeller',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
+    "name": "markPaymentExpired",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
       {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    name: 'sellerAddresses',
-    outputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: 'address',
-        name: '',
-        type: 'address',
-      },
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
     ],
-    name: 'sellers',
-    outputs: [
+    "name": "paymentRequests",
+    "outputs": [
       {
-        internalType: 'address payable',
-        name: 'walletAddress',
-        type: 'address',
+        "internalType": "string",
+        "name": "paymentId",
+        "type": "string"
       },
       {
-        internalType: 'string',
-        name: 'businessName',
-        type: 'string',
+        "internalType": "address payable",
+        "name": "seller",
+        "type": "address"
       },
       {
-        internalType: 'bool',
-        name: 'isRegistered',
-        type: 'bool',
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
       },
       {
-        internalType: 'uint256',
-        name: 'totalTransactions',
-        type: 'uint256',
+        "internalType": "uint256",
+        "name": "expiryTime",
+        "type": "uint256"
       },
       {
-        internalType: 'uint256',
-        name: 'totalAmount',
-        type: 'uint256',
+        "internalType": "bool",
+        "name": "isPaid",
+        "type": "bool"
       },
+      {
+        "internalType": "bool",
+        "name": "isExpired",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [],
-    name: 'totalSellers',
-    outputs: [
+    "inputs": [
       {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
       },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
     ],
-    stateMutability: 'view',
-    type: 'function',
+    "name": "recordDirectPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
-];
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "businessName",
+        "type": "string"
+      }
+    ],
+    "name": "registerSeller",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "sellerAddresses",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "sellers",
+    "outputs": [
+      {
+        "internalType": "address payable",
+        "name": "walletAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "businessName",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "isRegistered",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalTransactions",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalSellers",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
 
 export { CONTRACT_ADDRESS, CONTRACT_ABI };

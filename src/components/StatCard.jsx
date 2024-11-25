@@ -26,10 +26,10 @@ const StatCard = ({ icon: Icon, title, value, iconColor }) => {
 };
 
 StatCard.propTypes = {
-  icon: PropTypes.elementType.isRequired,
-  title: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  iconColor: PropTypes.string.isRequired,
+  icon: PropTypes.elementType,
+  title: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  iconColor: PropTypes.string,
 };
 
 export default StatCard;

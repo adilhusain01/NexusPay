@@ -12,7 +12,7 @@ const TotalVolumeCard = ({ totalAmount }) => (
 );
 
 TotalVolumeCard.propTypes = {
-  totalAmount: PropTypes.number.isRequired,
+  totalAmount: PropTypes.string,
 };
 
 export default TotalVolumeCard;

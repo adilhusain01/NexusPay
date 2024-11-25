@@ -10,8 +10,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import PropTypes from 'prop-types';
+import { usePayment } from '../contexts/PaymentContext';
 
-const PaymentRequestsTable = ({ sellerPaymentHistory }) => {
+const PaymentRequestsTable = () => {
+  const { sellerPayments } = usePayment()
+
+  console.log(sellerPayments);
+  
+
   const formatDate = (timestamp) => {
     return new Date(timestamp * 1000).toLocaleString();
   };
@@ -61,24 +67,24 @@ const PaymentRequestsTable = ({ sellerPaymentHistory }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sellerPaymentHistory.map((payment, index) => (
+                {sellerPayments.map((payment, index) => (
                   <motion.tr
-                    key={payment.paymentId}
+                    key={payment.paymentId || payment.timestamp}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * index }}
                     className='group'
                   >
                     <TableCell className='text-slate-300 font-medium'>
-                      {payment.paymentId}
+                      {payment.paymentId || 'Direct Payment'}
                     </TableCell>
                     <TableCell className='text-slate-300'>
                       {payment.amount} ETH
                     </TableCell>
                     <TableCell>
-                      {`${payment.buyer.slice(0, 6)}...${payment.buyer.slice(
-                        -4
-                      )}`}
+                      {payment.buyer
+                        ? `${payment.buyer.slice(0, 6)}...${payment.buyer.slice(-4)}`
+                        : `${payment.payer.slice(0, 6)}...${payment.payer.slice(-4)}`}
                     </TableCell>
                     <TableCell className='text-slate-400'>
                       {formatDate(payment.timestamp)}
@@ -87,7 +93,7 @@ const PaymentRequestsTable = ({ sellerPaymentHistory }) => {
                 ))}
               </TableBody>
             </Table>
-            {sellerPaymentHistory.length === 0 && (
+            {sellerPayments.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -105,14 +111,16 @@ const PaymentRequestsTable = ({ sellerPaymentHistory }) => {
 };
 
 PaymentRequestsTable.propTypes = {
-  sellerPaymentHistory: PropTypes.arrayOf(
+  sellerPayments: PropTypes.arrayOf(
     PropTypes.shape({
-      paymentId: PropTypes.string.isRequired,
-      amount: PropTypes.number.isRequired,
-      buyer: PropTypes.string.isRequired,
-      timestamp: PropTypes.number.isRequired,
+      paymentId: PropTypes.string,
+      amount: PropTypes.number,
+      buyer: PropTypes.string,
+      payer: PropTypes.string,
+      timestamp: PropTypes.number,
+      type: PropTypes.string,
     })
-  ).isRequired,
+  ),
 };
 
 export default PaymentRequestsTable;
