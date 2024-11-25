@@ -13,14 +13,11 @@ import PropTypes from 'prop-types';
 import { usePayment } from '../contexts/PaymentContext';
 
 const PaymentRequestsTable = () => {
-  const { sellerPayments } = usePayment()
-
-  console.log(sellerPayments);
-  
+  const { sellerPayments } = usePayment()  
 
   const formatDate = (timestamp) => {
     return new Date(timestamp * 1000).toLocaleString();
-  };
+  };  
 
   return (
     <motion.div

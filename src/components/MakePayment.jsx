@@ -90,13 +90,19 @@ const MakePayment = () => {
         resetState();
         await fetchClientPaymentHistory();
       } else {
-        // Regular payment through contract - remove the second transaction
         await makePayment(paymentId, paymentDetails.amount);
-        // No need to check status immediately after payment
-        // The contract events will handle updating the UI
-        toast.success('Payment successful');
-        resetState();
-        await fetchClientPaymentHistory();
+        const status = await checkPaymentStatus(paymentId);
+        setPaymentStatus(status);
+
+        if (status.paymentDetails) {
+          setPaymentDetails(status.paymentDetails);
+        }
+
+        if (status.isPaid) {
+          toast.success('Payment successful');
+          resetState();
+          await fetchClientPaymentHistory();
+        }
       }
     } catch (error) {
       setError('Payment failed. Please try again.');
