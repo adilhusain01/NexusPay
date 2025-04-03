@@ -29,16 +29,30 @@ contract PaymentPlatform {
         uint256 timestamp;
     }
 
+    struct DirectPayment {
+        address from;
+        address to;
+        uint256 amount;
+        uint256 timestamp;
+    }
+
     // State variables
     mapping(address => Seller) public sellers;
     mapping(string => PaymentRequest) public paymentRequests;
     mapping(address => PaymentRequest[]) private sellerPaymentHistory;
     mapping(address => ClientPayment[]) private clientPaymentHistory;
+
+    // New state variables for direct payments
+    mapping(address => DirectPayment[]) private clientDirectPayments;
+    mapping(address => DirectPayment[]) private sellerDirectPayments;
+
     uint256 public constant PAYMENT_WINDOW = 180 seconds; // 3 minutes expiry time
     address public owner;
-
     address[] public sellerAddresses;
     uint256 public totalSellers;
+
+ // Add new event for direct payments
+    event DirectPaymentRecorded(address indexed from, address indexed to, uint256 amount, uint256 timestamp);
     
     // Events
     event SellerRegistered(address indexed sellerAddress, string businessName);
@@ -63,6 +77,87 @@ contract PaymentPlatform {
     }
     
     // Functions
+
+   function recordDirectPayment(address recipient, uint256 amount) external {
+        uint256 timestamp = block.timestamp;
+        
+        // Record for the sender (client)
+        clientDirectPayments[msg.sender].push(DirectPayment({
+            from: msg.sender,
+            to: recipient,
+            amount: amount,
+            timestamp: timestamp
+        }));
+
+        // If recipient is a registered seller, record it in their history too
+        if (sellers[recipient].isRegistered) {
+            sellerDirectPayments[recipient].push(DirectPayment({
+                from: msg.sender,
+                to: recipient,
+                amount: amount,
+                timestamp: timestamp
+            }));
+            
+            // Update seller's statistics
+            Seller storage seller = sellers[recipient];
+            seller.totalTransactions += 1;
+            seller.totalAmount += amount;
+        }
+        
+        emit DirectPaymentRecorded(msg.sender, recipient, amount, timestamp);
+    }
+
+     function getClientDirectPayments(address client) 
+        external 
+        view 
+        returns (
+            address[] memory recipients,
+            uint256[] memory amounts,
+            uint256[] memory timestamps
+        ) 
+    {
+        DirectPayment[] memory history = clientDirectPayments[client];
+        uint256 length = history.length;
+        
+        recipients = new address[](length);
+        amounts = new uint256[](length);
+        timestamps = new uint256[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            recipients[i] = history[i].to;
+            amounts[i] = history[i].amount;
+            timestamps[i] = history[i].timestamp;
+        }
+        
+        return (recipients, amounts, timestamps);
+    }
+
+
+     function getSellerDirectPayments(address seller) 
+        external 
+        view 
+        returns (
+            address[] memory payers,
+            uint256[] memory amounts,
+            uint256[] memory timestamps
+        ) 
+    {
+        DirectPayment[] memory history = sellerDirectPayments[seller];
+        uint256 length = history.length;
+        
+        payers = new address[](length);
+        amounts = new uint256[](length);
+        timestamps = new uint256[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            payers[i] = history[i].from;
+            amounts[i] = history[i].amount;
+            timestamps[i] = history[i].timestamp;
+        }
+        
+        return (payers, amounts, timestamps);
+    }
+    
     function registerSeller(string memory businessName) external {
         require(!sellers[msg.sender].isRegistered, "Seller already registered");
         require(bytes(businessName).length > 0, "Business name cannot be empty");
